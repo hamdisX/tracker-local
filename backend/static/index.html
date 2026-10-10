@@ -132,6 +132,7 @@ textarea{min-height:80px;resize:vertical}
     <div class="actions">
       <button class="btn" id="export-btn" hidden>Exporter (CSV)</button>
       <button class="btn primary" id="add-btn">+ Ajouter une offre</button>
+      <button class="btn" id="logout-btn" title="Se déconnecter">Déconnexion</button>
     </div>
   </header>
 
@@ -425,6 +426,7 @@ $('delete-btn').onclick=async()=>{
 };
 
 // Interactions de la liste
+$('logout-btn').onclick=async()=>{try{await fetch('/api/logout',{method:'POST'})}finally{location.replace('/login')}};
 $('add-btn').onclick=()=>openForm(null);
 $('tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b){view=b.dataset.v;$('f-q').value='';$('f-statut').value='';render()}});
 FILTERS.forEach(id=>$(id).addEventListener('change',()=>{renderTabs();renderList()}));
@@ -446,7 +448,7 @@ $('export-btn').onclick=async()=>{
 function newId(){return (crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2,10))}
 function makeApiDb(base){
   const listeners=[];
-  async function call(url,opts){const r=await fetch(url,opts);if(!r.ok){let m='';try{m=(await r.json()).detail}catch(_){};throw {code:r.status===409?'duplicate':r.status===422?'invalid_argument':'unavailable',message:m}}return r.status===204?null:r.json()}
+  async function call(url,opts){const r=await fetch(url,{credentials:'same-origin',...opts});if(r.status===401){location.replace('/login');throw {code:'unauthenticated'}}if(!r.ok){let m='';try{m=(await r.json()).detail}catch(_){};throw {code:r.status===409?'duplicate':r.status===422?'invalid_argument':'unavailable',message:m}}return r.status===204?null:r.json()}
   async function refresh(){
     const data=await call(base);
     const snap={docs:data.map(x=>({id:x.id,data:()=>({...x.data,ref:x.ref})}))};

@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Connexion · Candidatures Yosra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap">
+<style>
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --line:#d5dce6; --fg:#16202e; --muted:#5b6778;
+  --accent:#2b4fa3; --accent-2:#1b3577; --accent-fg:#ffffff;
+  --bad:#b0302a; --bad-bg:#fbe2e0;
+  --hero-1:#13254f; --hero-2:#2b4fa3; --hero-fg:#eef2fb;
+  --f-ui:"Schibsted Grotesk","Segoe UI",system-ui,sans-serif;
+  --f-display:"Instrument Serif",Georgia,serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f141c; --surface:#161d28; --line:#2b3646; --fg:#e6ebf2; --muted:#98a4b5;
+  --accent:#7f9ff0; --accent-2:#a9bff6; --accent-fg:#0f141c;
+  --bad:#f08a83; --bad-bg:#3c1a19;
+  --hero-1:#0a1430; --hero-2:#1d3577; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0f141c; --surface:#161d28; --line:#2b3646; --fg:#e6ebf2; --muted:#98a4b5;
+  --accent:#7f9ff0; --accent-2:#a9bff6; --accent-fg:#0f141c;
+  --bad:#f08a83; --bad-bg:#3c1a19;
+  --hero-1:#0a1430; --hero-2:#1d3577; color-scheme:dark;}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:15px;line-height:1.5;
+  display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);min-height:100vh}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Panneau visuel */
+.hero{position:relative;overflow:hidden;color:var(--hero-fg);padding:48px 56px;
+  background:linear-gradient(150deg,var(--hero-1) 0%,var(--hero-2) 100%);
+  display:flex;flex-direction:column;justify-content:space-between}
+.hero::before{content:"";position:absolute;inset:0;opacity:.18;pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.9) 1px,transparent 1px);background-size:22px 22px;
+  mask-image:linear-gradient(160deg,#000 0%,transparent 70%)}
+.hero::after{content:"";position:absolute;width:520px;height:520px;right:-180px;bottom:-200px;border-radius:50%;
+  border:1px solid rgba(255,255,255,.18);box-shadow:0 0 0 60px rgba(255,255,255,.04),0 0 0 140px rgba(255,255,255,.03)}
+.brand{position:relative;display:flex;align-items:center;gap:10px;font-weight:600;letter-spacing:.01em}
+.brand i{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.14);display:grid;place-items:center;font-style:normal}
+.hero-text{position:relative;max-width:440px}
+.hero-text h2{font-family:var(--f-display);font-weight:400;font-size:clamp(2.2rem,3.6vw,3.2rem);line-height:1.08;margin:0 0 14px;letter-spacing:-.01em}
+.hero-text h2 em{font-style:italic;opacity:.85}
+.hero-text p{margin:0;opacity:.78;font-size:1rem}
+.steps{position:relative;display:flex;gap:8px;flex-wrap:wrap;font-size:.82rem}
+.steps span{padding:5px 11px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16)}
+
+/* Formulaire */
+main{display:grid;place-items:center;padding:40px 24px}
+.card{width:100%;max-width:380px;display:flex;flex-direction:column;gap:22px}
+.card h1{font-size:1.65rem;font-weight:700;letter-spacing:-.015em;margin:0}
+.card .lead{margin:4px 0 0;color:var(--muted)}
+form{display:flex;flex-direction:column;gap:16px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:.82rem;font-weight:600;color:var(--muted)}
+.input{position:relative;display:flex;align-items:center}
+.input svg.ico{position:absolute;left:13px;width:18px;height:18px;color:var(--muted);pointer-events:none}
+.input input{width:100%;padding:12px 14px 12px 42px;border:1px solid var(--line);border-radius:10px;background:var(--surface);
+  font-size:1rem;transition:border-color .15s,box-shadow .15s}
+.input input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent)}
+.input input[aria-invalid="true"]{border-color:var(--bad)}
+.toggle{position:absolute;right:6px;border:0;background:transparent;cursor:pointer;color:var(--muted);padding:8px;border-radius:7px;display:grid;place-items:center}
+.toggle:hover{color:var(--fg)}
+.toggle svg{width:18px;height:18px}
+.row{display:flex;justify-content:space-between;align-items:center;font-size:.88rem}
+.check{display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--muted)}
+.check input{width:16px;height:16px;accent-color:var(--accent);margin:0}
+.caps{color:var(--bad);font-size:.8rem}
+.submit{position:relative;border:0;border-radius:10px;padding:13px 16px;background:var(--accent);color:var(--accent-fg);
+  font-weight:600;font-size:1rem;cursor:pointer;transition:background .15s,transform .05s;display:flex;justify-content:center;align-items:center;gap:10px}
+.submit:hover{background:var(--accent-2)}
+.submit:active{transform:translateY(1px)}
+.submit[disabled]{opacity:.75;cursor:progress}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent}
+.error{display:flex;gap:10px;align-items:flex-start;padding:11px 13px;border-radius:10px;background:var(--bad-bg);color:var(--bad);font-size:.9rem}
+.error svg{flex:none;width:18px;height:18px;margin-top:1px}
+.foot{color:var(--muted);font-size:.8rem;text-align:center;margin:0}
+
+@media (prefers-reduced-motion:no-preference){
+  .card{animation:rise .35s ease-out}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}}
+  .spin{animation:rot .7s linear infinite} @keyframes rot{to{transform:rotate(360deg)}}
+  .shake{animation:shake .35s} @keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
+}
+@media (max-width:860px){
+  body{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .hero{padding:24px 20px 28px;gap:18px}
+  .hero::after{width:300px;height:300px;right:-120px;bottom:-160px}
+  .hero-text h2{font-size:1.9rem;margin-bottom:6px}
+  .hero-text p,.steps{display:none}
+  main{place-items:start center;padding:28px 16px 40px}
+}
+</style>
+</head>
+<body>
+
+<aside class="hero" aria-hidden="true">
+  <div class="brand"><i>Y</i> Suivi des candidatures</div>
+  <div class="hero-text">
+    <h2>Chaque offre,<br><em>suivie jusqu'au oui.</em></h2>
+    <p>Emploi, master et alternance réunis au même endroit, avec les relances au bon moment.</p>
+  </div>
+  <div class="steps"><span>Repérée</span><span>Envoyée</span><span>Relancée</span><span>Entretien</span></div>
+</aside>
+
+<main>
+  <div class="card">
+    <div>
+      <h1>Connexion</h1>
+      <p class="lead">Accès réservé. Entrez vos identifiants.</p>
+    </div>
+
+    <div class="error" id="error" role="alert" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>
+      <span id="error-text"></span>
+    </div>
+
+    <form id="form" novalidate>
+      <div class="field">
+        <label for="username">Identifiant</label>
+        <div class="input">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"/></svg>
+          <input id="username" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="password">Mot de passe</label>
+        <div class="input">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+          <input id="password" name="password" type="password" autocomplete="current-password" required>
+          <button type="button" class="toggle" id="toggle" aria-label="Afficher le mot de passe" aria-pressed="false">
+            <svg id="eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <span class="caps" id="caps" hidden>Verr. Maj activé</span>
+      </div>
+
+      <div class="row">
+        <label class="check"><input type="checkbox" id="remember" checked> Rester connectée</label>
+      </div>
+
+      <button class="submit" id="submit" type="submit"><span id="submit-label">Se connecter</span></button>
+    </form>
+
+    <p class="foot">Session sécurisée · cookie chiffré côté serveur</p>
+  </div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const EYE='<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>';
+const EYE_OFF='<path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7a9.6 9.6 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2"/>';
+
+function showError(msg){
+  $('error-text').textContent=msg; $('error').hidden=!msg;
+  ['username','password'].forEach(id=>$(id).setAttribute('aria-invalid',msg?'true':'false'));
+  if(msg){const c=document.querySelector('.card');c.classList.remove('shake');void c.offsetWidth;c.classList.add('shake')}
+}
+function busy(on){
+  $('submit').disabled=on;
+  $('submit').innerHTML=on?'<span class="spin"></span><span>Connexion…</span>':'<span>Se connecter</span>';
+}
+
+$('toggle').onclick=()=>{
+  const p=$('password'), show=p.type==='password';
+  p.type=show?'text':'password';
+  $('eye').innerHTML=show?EYE_OFF:EYE;
+  $('toggle').setAttribute('aria-pressed',show);
+  $('toggle').setAttribute('aria-label',show?'Masquer le mot de passe':'Afficher le mot de passe');
+  p.focus();
+};
+$('password').addEventListener('keyup',e=>{$('caps').hidden=!(e.getModifierState&&e.getModifierState('CapsLock'))});
+['username','password'].forEach(id=>$(id).addEventListener('input',()=>{if(!$('error').hidden)showError('')}));
+
+$('form').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const username=$('username').value.trim(), password=$('password').value;
+  if(!username||!password){showError('Renseignez l\'identifiant et le mot de passe.');(username?$('password'):$('username')).focus();return}
+  busy(true); showError('');
+  try{
+    const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',
+      body:JSON.stringify({username,password,remember:$('remember').checked})});
+    if(r.ok){location.replace('/');return}
+    let msg='Connexion impossible.'; try{msg=(await r.json()).detail||msg}catch(_){}
+    showError(msg); $('password').select();
+  }catch(_){showError('Serveur injoignable. Vérifiez que l\'API tourne.')}
+  busy(false);
+});
+</script>
+</body>
+</html>

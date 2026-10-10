@@ -1,10 +1,28 @@
-# Tracker candidatures Yosra — version locale
+# Tracker candidatures Yosra : version locale
 
 - **Front** : `backend/static/index.html` (même page que sur claude.ai)
 - **API** : Python / FastAPI (`backend/main.py`)
 - **Base** : PostgreSQL 16 dans Docker (volume `pgdata`, les données survivent aux redémarrages)
 
-## Option A — Python en local (venv) + Postgres dans Docker
+## Connexion
+
+Le site est protégé par une page de connexion (`/login`) et un cookie de session signé (HttpOnly, SameSite=Lax, 7 jours).
+
+Créer un fichier `.env` à côté de `docker-compose.yml` :
+
+```bash
+APP_USERNAME=yosra
+APP_PASSWORD=un-mot-de-passe-solide
+SECRET_KEY=$(openssl rand -hex 32)   # coller la valeur générée
+COOKIE_SECURE=false                  # true dès que le site est en HTTPS
+```
+
+En option A (venv), exporter les mêmes variables avant `uvicorn` :
+`set -a; source ../.env; set +a`
+
+5 mauvais mots de passe depuis la même IP bloquent les essais pendant 5 minutes.
+
+## Option A : Python en local (venv) + Postgres dans Docker
 
 ```bash
 cd tracker-local
@@ -19,7 +37,7 @@ uvicorn main:app --reload --port 8000
 
 Ouvrir http://localhost:8000
 
-## Option B — tout dans Docker
+## Option B : tout dans Docker
 
 ```bash
 cd tracker-local
@@ -32,7 +50,9 @@ Ouvrir http://localhost:8000
 
 | Méthode | Route | Rôle |
 |---|---|---|
-| GET | `/api/health` | Vérifie l'accès à la base |
+| GET | `/api/health` | Vérifie l'accès à la base (public) |
+| POST | `/api/login` | Connexion (`{username, password, remember}`) |
+| POST | `/api/logout` | Déconnexion |
 | GET | `/api/candidatures` | Liste toutes les offres |
 | PUT | `/api/candidatures/{id}` | Crée ou remplace une offre |
 | DELETE | `/api/candidatures/{id}` | Supprime une offre |
@@ -57,5 +77,5 @@ docker compose --profile full down -v
 ## Notes
 
 - La page se rafraîchit toutes les 5 s : deux navigateurs ouverts voient les modifications de l'autre.
-- Pas d'authentification : à garder en local. Avant toute mise en ligne, ajouter un login et HTTPS.
+- Avant toute mise en ligne : HTTPS obligatoire (reverse proxy) + `COOKIE_SECURE=true`.
 - Identifiants Postgres (`tracker/tracker`) à changer hors local.
