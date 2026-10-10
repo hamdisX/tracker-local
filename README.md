@@ -1,0 +1,61 @@
+# Tracker candidatures Yosra — version locale
+
+- **Front** : `backend/static/index.html` (même page que sur claude.ai)
+- **API** : Python / FastAPI (`backend/main.py`)
+- **Base** : PostgreSQL 16 dans Docker (volume `pgdata`, les données survivent aux redémarrages)
+
+## Option A — Python en local (venv) + Postgres dans Docker
+
+```bash
+cd tracker-local
+docker compose up -d db                 # lance uniquement PostgreSQL
+
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
+
+Ouvrir http://localhost:8000
+
+## Option B — tout dans Docker
+
+```bash
+cd tracker-local
+docker compose --profile full up -d --build
+```
+
+Ouvrir http://localhost:8000
+
+## API
+
+| Méthode | Route | Rôle |
+|---|---|---|
+| GET | `/api/health` | Vérifie l'accès à la base |
+| GET | `/api/candidatures` | Liste toutes les offres |
+| PUT | `/api/candidatures/{id}` | Crée ou remplace une offre |
+| DELETE | `/api/candidatures/{id}` | Supprime une offre |
+
+Documentation interactive : http://localhost:8000/docs
+
+## Commandes utiles
+
+```bash
+# Voir les données
+docker compose exec db psql -U tracker -c "SELECT id, data->>'poste', data->>'statut' FROM candidatures;"
+
+# Sauvegarde / restauration
+docker compose exec -T db pg_dump -U tracker tracker > backup.sql
+docker compose exec -T db psql -U tracker tracker < backup.sql
+
+# Tout arrêter (garde les données) / tout effacer
+docker compose --profile full down
+docker compose --profile full down -v
+```
+
+## Notes
+
+- La page se rafraîchit toutes les 5 s : deux navigateurs ouverts voient les modifications de l'autre.
+- Pas d'authentification : à garder en local. Avant toute mise en ligne, ajouter un login et HTTPS.
+- Identifiants Postgres (`tracker/tracker`) à changer hors local.

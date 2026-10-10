@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Candidatures Yosra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: header + barre de synthèse, onglets par étape du parcours (backlog → en cours → terminées), tableau opérable, panneau d'édition */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --sunk:#e9edf3; --line:#d5dce6;
+  --fg:#16202e; --muted:#5b6778; --accent:#2b4fa3; --accent-fg:#ffffff;
+  --ok:#1f7a4d; --ok-bg:#dff3e8; --warn:#9a5b00; --warn-bg:#fdefd5;
+  --bad:#b0302a; --bad-bg:#fbe2e0; --info:#2b4fa3; --info-bg:#e1e9fb;
+  --neutral-bg:#e7ebf1;
+  --f-ui:"Schibsted Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f141c; --surface:#161d28; --sunk:#1d2633; --line:#2b3646;
+  --fg:#e6ebf2; --muted:#98a4b5; --accent:#7f9ff0; --accent-fg:#0f141c;
+  --ok:#6fd3a0; --ok-bg:#163527; --warn:#f0b65c; --warn-bg:#3a2a10;
+  --bad:#f08a83; --bad-bg:#3c1a19; --info:#9fb8f5; --info-bg:#1c2847;
+  --neutral-bg:#222c3a; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0f141c; --surface:#161d28; --sunk:#1d2633; --line:#2b3646;
+  --fg:#e6ebf2; --muted:#98a4b5; --accent:#7f9ff0; --accent-fg:#0f141c;
+  --ok:#6fd3a0; --ok-bg:#163527; --warn:#f0b65c; --warn-bg:#3a2a10;
+  --bad:#f08a83; --bad-bg:#3c1a19; --info:#9fb8f5; --info-bg:#1c2847;
+  --neutral-bg:#222c3a; color-scheme:dark;}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{color-scheme:light}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:15px;line-height:1.45;padding-inline:16px;padding-block:20px 48px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-size:1.6rem;font-weight:700;letter-spacing:-.01em;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:2px 0 0;font-size:.92rem}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+button,select,input,textarea{font:inherit;color:inherit}
+.btn{border:1px solid var(--line);background:var(--surface);padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:500}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.danger.armed{background:var(--bad);color:var(--surface)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.stat .k{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.stat .v{font-family:var(--f-mono);font-size:1.4rem;font-weight:500;font-variant-numeric:tabular-nums}
+.stat .v small{font-size:.75rem;color:var(--muted);font-family:var(--f-ui)}
+.stat.alert .v{color:var(--warn)}
+
+.toolbar{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:center}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;background:var(--sunk);padding:4px;border-radius:10px}
+.tab{border:0;background:transparent;padding:7px 12px;border-radius:7px;cursor:pointer;color:var(--muted);font-weight:500}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.tab .n{font-family:var(--f-mono);font-size:.8rem;margin-left:4px;opacity:.75}
+.filters{display:flex;gap:8px;flex-wrap:wrap}
+.filters select{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 10px;max-width:100%}
+.search-bar{display:flex;flex-direction:column;gap:10px}
+#f-q{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 14px;font-size:1rem}
+.filters select.on{border-color:var(--accent);color:var(--accent)}
+.result-note{margin:0;color:var(--muted);font-size:.9rem}
+mark{background:var(--warn-bg);color:inherit;border-radius:3px;padding:0 1px}
+
+.table-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;min-width:900px}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:var(--sunk)}
+.title-cell{min-width:220px}
+.title-cell b{display:block;font-weight:600}
+.title-cell span{color:var(--muted);font-size:.88rem}
+.title-cell a{color:var(--accent);font-size:.82rem;text-decoration:none}
+.title-cell a:hover{text-decoration:underline}
+.mono{font-family:var(--f-mono);font-size:.85rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.chip{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.78rem;font-weight:600;white-space:nowrap;background:var(--neutral-bg)}
+.t-Emploi{background:var(--info-bg);color:var(--info)}
+.t-Master{background:var(--ok-bg);color:var(--ok)}
+.t-Alternance{background:var(--warn-bg);color:var(--warn)}
+.p-Haute{color:var(--bad)} .p-Moyenne{color:var(--warn)} .p-Basse{color:var(--muted)}
+.statut-select{border:1px solid var(--line);border-radius:7px;padding:4px 6px;background:var(--surface);font-size:.85rem;max-width:150px}
+.s-good{border-color:var(--ok);color:var(--ok)}
+.s-bad{border-color:var(--bad);color:var(--bad)}
+.s-active{border-color:var(--info);color:var(--info)}
+.late{color:var(--warn);font-weight:600}
+.late::before{content:"● ";}
+.cv{font-size:.85rem;white-space:nowrap}
+.ref{font-family:var(--f-mono);font-size:.82rem;color:var(--muted);white-space:nowrap}
+.dup{border:1px solid var(--warn);background:var(--warn-bg);color:var(--fg);border-radius:8px;padding:10px 12px;font-size:.9rem;display:flex;flex-direction:column;gap:6px}
+.dup.block{border-color:var(--bad);background:var(--bad-bg)}
+.dup button{align-self:flex-start}
+.edit{border:0;background:transparent;color:var(--accent);cursor:pointer;font-weight:600;padding:2px 4px}
+
+.empty{padding:36px 20px;text-align:center;color:var(--muted)}
+.empty b{display:block;color:var(--fg);font-size:1.05rem;margin-bottom:4px}
+.msg{padding:10px 14px;border-radius:8px;background:var(--bad-bg);color:var(--bad)}
+
+/* Panneau d'édition */
+.overlay{position:fixed;inset:0;background:rgba(10,15,25,.45);display:flex;justify-content:flex-end;z-index:10}
+.panel{background:var(--surface);width:min(560px,100%);height:100%;overflow-y:auto;padding:20px 20px calc(24px + env(safe-area-inset-bottom,0px));padding-top:calc(20px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:14px;border-left:1px solid var(--line)}
+.panel h2{margin:0;font-size:1.2rem}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.full{grid-column:1/-1}
+label{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--muted);font-weight:500;min-width:0}
+label input,label select,label textarea{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--bg);color:var(--fg);font-size:.95rem;width:100%}
+textarea{min-height:80px;resize:vertical}
+.hint{font-size:.78rem;color:var(--muted)}
+.history{border-top:1px solid var(--line);padding-top:10px}
+.history h3{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 6px}
+.history ol{margin:0;padding-left:18px;font-size:.88rem;display:flex;flex-direction:column;gap:2px}
+.panel-actions{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:auto}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:8px 16px;border-radius:8px;font-size:.9rem;z-index:20}
+@media (max-width:560px){.grid{grid-template-columns:1fr}h1{font-size:1.35rem}}
+@media (prefers-reduced-motion:no-preference){.panel{animation:slide .18s ease-out}@keyframes slide{from{transform:translateX(24px);opacity:.6}}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Candidatures Yosra</h1>
+      <p class="sub">Emploi, master et alternance · Île-de-France, Orléans, Amiens, Rouen, Reims</p>
+    </div>
+    <div class="actions">
+      <button class="btn" id="export-btn" hidden>Exporter (CSV)</button>
+      <button class="btn primary" id="add-btn">+ Ajouter une offre</button>
+    </div>
+  </header>
+
+  <section class="summary" id="summary" aria-label="Synthèse"></section>
+
+  <div class="toolbar">
+    <div class="tabs" role="tablist" id="tabs"></div>
+  </div>
+  <div class="search-bar">
+    <input id="f-q" type="search" placeholder="Rechercher : poste, entreprise, ville, contact, notes…" aria-label="Recherche par mot-clé">
+    <div class="filters">
+      <select id="f-type" aria-label="Filtrer par type">
+        <option value="">Tous les types</option><option>Emploi</option><option>Master</option><option>Alternance</option>
+      </select>
+      <select id="f-statut" aria-label="Filtrer par statut"><option value="">Tous les statuts</option></select>
+      <select id="f-ville" aria-label="Filtrer par ville"><option value="">Toutes les villes</option></select>
+      <select id="f-source" aria-label="Filtrer par source"><option value="">Toutes les sources</option></select>
+      <select id="f-cv" aria-label="Filtrer par version de CV"><option value="">Toutes les versions de CV</option></select>
+      <button class="btn" id="f-clear" hidden>Effacer les filtres</button>
+    </div>
+    <p class="result-note" id="result-note" hidden></p>
+  </div>
+
+  <div id="error" class="msg" hidden></div>
+  <div class="table-wrap" id="list"></div>
+</div>
+
+<div class="overlay" id="overlay" hidden>
+  <form class="panel" id="form" novalidate>
+    <h2 id="form-title">Nouvelle offre</h2>
+    <div class="grid">
+      <label>Type<select id="i-type"><option>Emploi</option><option>Master</option><option>Alternance</option></select></label>
+      <label>Statut<select id="i-statut"></select></label>
+      <label class="full">Poste / Formation<input id="i-poste" required placeholder="ex. Scrum Master, M2 Génie biomédical"></label>
+      <label>Entreprise / École<input id="i-entreprise"></label>
+      <label>Ville<input id="i-ville" list="villes"></label>
+      <label class="full">Lien de l'offre<input id="i-lien" type="url" placeholder="https://"></label>
+      <label>Source<select id="i-source"></select></label>
+      <label>Priorité<select id="i-priorite"><option>Haute</option><option selected>Moyenne</option><option>Basse</option></select></label>
+      <label>Version de CV<select id="i-cv"></select></label>
+      <label>Langue du CV<select id="i-lang"><option>FR</option><option>EN</option></select></label>
+      <label>Lettre de motivation<select id="i-lettre"><option>Non</option><option>Oui</option></select></label>
+      <label>Date limite<input id="i-limite" type="date"></label>
+      <label>Date d'envoi<input id="i-envoi" type="date"><span class="hint" id="relance-hint">Relance prévue 10 jours après l'envoi</span></label>
+      <label>Contact<input id="i-contact" placeholder="Nom ou email du recruteur"></label>
+      <label class="full">Notes<textarea id="i-notes"></textarea></label>
+    </div>
+    <div class="dup" id="dup" hidden></div>
+    <div class="history" id="history" hidden><h3>Historique</h3><ol id="history-list"></ol></div>
+    <div class="panel-actions">
+      <button type="button" class="btn danger" id="delete-btn" hidden>Supprimer</button>
+      <span style="display:flex;gap:8px;margin-left:auto">
+        <button type="button" class="btn" id="cancel-btn">Annuler</button>
+        <button type="submit" class="btn primary" id="save-btn">Enregistrer</button>
+      </span>
+    </div>
+  </form>
+</div>
+<datalist id="villes"><option>Paris</option><option>Orléans</option><option>Amiens</option><option>Rouen</option><option>Reims</option><option>La Défense</option><option>Saclay</option></datalist>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const STATUTS=['Repérée','À postuler','Envoyée','Relancée','Entretien'];
+const SOURCES=['LinkedIn','Indeed','Welcome to the Jungle','HelloWork','APEC','France Travail','Mon Master','Site de l\'école','Site de l\'entreprise','Cooptation / réseau','Autre'];
+const CVS=['Agile','Gestion de projet','Électronique','Master / alternance','Biomédical'];
+const VIEWS=[
+  {id:'backlog',label:'Backlog',st:['Repérée']},
+  {id:'encours',label:'En cours',st:['À postuler','Envoyée','Relancée','Entretien']},
+  {id:'toutes',label:'Toutes',st:STATUTS}
+];
+const RELANCE_JOURS=10;
+const SENT=['Envoyée','Relancée','Entretien'];
+const PRIO={Haute:0,Moyenne:1,Basse:2};
+
+let db=null, rows=[], view='backlog', editing=null, readOnly=false, downloads=null, deleteArmed=false;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+function addDays(iso,n){if(!iso)return '';const [y,m,d]=iso.split('-').map(Number);const dt=new Date(y,m-1,d+n);return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')}
+const fmt=iso=>{if(!iso)return '—';const [y,m,d]=iso.split('-');return d+'/'+m+'/'+y.slice(2)};
+const relanceOf=r=>r.dateEnvoi?addDays(r.dateEnvoi,RELANCE_JOURS):'';
+const needsRelance=r=>['Envoyée','Relancée'].includes(r.statut)&&r.dateEnvoi&&relanceOf(r)<=today();
+
+function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>el.hidden=true,2200)}
+function showError(t){const el=$('error');el.textContent=t;el.hidden=!t}
+
+// Options des listes
+$('i-statut').innerHTML=STATUTS.map(s=>`<option>${s}</option>`).join('');
+$('i-source').innerHTML=SOURCES.map(s=>`<option>${esc(s)}</option>`).join('');
+$('i-cv').innerHTML=CVS.map(s=>`<option>${s}</option>`).join('');
+$('f-cv').innerHTML+=CVS.map(s=>`<option>${s}</option>`).join('');
+$('f-statut').innerHTML+=STATUTS.map(s=>`<option>${s}</option>`).join('');
+$('f-source').innerHTML+=SOURCES.map(s=>`<option>${esc(s)}</option>`).join('');
+function refreshVilles(){
+  const sel=$('f-ville'), cur=sel.value, seen=new Map();
+  rows.forEach(r=>{const v=(r.ville||'').trim();if(v&&!seen.has(norm(v)))seen.set(norm(v),v)});
+  const list=[...seen.values()].sort((a,b)=>a.localeCompare(b,'fr'));
+  sel.innerHTML='<option value="">Toutes les villes</option>'+list.map(v=>`<option>${esc(v)}</option>`).join('');
+  sel.value=list.some(v=>v===cur)?cur:'';
+}
+function hl(text){
+  let out=esc(text); const words=norm($('f-q').value).split(/\s+/).filter(Boolean);
+  if(!words.length||!text)return out;
+  // Surligne sans tenir compte des accents : on repère les positions dans la version normalisée
+  const src=String(text), n=norm(src); if(n.length!==src.length)return out;
+  const marks=new Array(src.length).fill(false);
+  words.forEach(w=>{let i=n.indexOf(w);while(i>-1){for(let k=i;k<i+w.length;k++)marks[k]=true;i=n.indexOf(w,i+w.length)}});
+  let res='',open=false;
+  for(let i=0;i<src.length;i++){if(marks[i]&&!open){res+='<mark>';open=true}if(!marks[i]&&open){res+='</mark>';open=false}res+=esc(src[i])}
+  return res+(open?'</mark>':'');
+}
+
+const norm=s=>String(s??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const FILTERS=['f-type','f-statut','f-ville','f-source','f-cv'];
+function searching(){return !!($('f-q').value.trim()||$('f-statut').value)}
+function filtered(){
+  const v=VIEWS.find(x=>x.id===view), ft=$('f-type').value, fc=$('f-cv').value, fs=$('f-statut').value, fv=$('f-ville').value, fo=$('f-source').value;
+  const words=norm($('f-q').value).split(/\s+/).filter(Boolean);
+  // Une recherche par mot-clé ou par statut porte sur toutes les offres, quel que soit l'onglet
+  const st=searching()?STATUTS:v.st;
+  let list=rows.filter(r=>{
+    if(!st.includes(r.statut))return false;
+    if(ft&&r.type!==ft)return false;
+    if(fc&&r.cv!==fc)return false;
+    if(fs&&r.statut!==fs)return false;
+    if(fv&&norm(r.ville)!==norm(fv))return false;
+    if(fo&&r.source!==fo)return false;
+    if(words.length){const hay=norm([r.ref?'#'+r.ref:'',r.ref,r.poste,r.entreprise,r.ville,r.source,r.type,r.statut,r.contact,r.notes,r.cv].join(' '));if(!words.every(w=>hay.includes(w)))return false}
+    return true;
+  });
+  if(view==='backlog') list.sort((a,b)=>(PRIO[a.priorite]??1)-(PRIO[b.priorite]??1)||(a.dateLimite||'9999').localeCompare(b.dateLimite||'9999'));
+  else if(view==='encours') list.sort((a,b)=>(needsRelance(b)-needsRelance(a))||(relanceOf(a)||'9999').localeCompare(relanceOf(b)||'9999'));
+  else list.sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||''));
+  return list;
+}
+
+function renderSummary(){
+  const by=s=>rows.filter(r=>r.statut===s).length;
+  const isSent=r=>SENT.includes(r.statut);
+  const sent=rows.filter(isSent).length;
+  const late=rows.filter(needsRelance).length;
+  const t=k=>rows.filter(r=>r.type===k&&isSent(r)).length;
+  $('summary').innerHTML=`
+    <div class="stat"><div class="k">Backlog</div><div class="v">${by('Repérée')}</div></div>
+    <div class="stat"><div class="k">Envoyées</div><div class="v">${sent} <small>Emploi ${t('Emploi')} · Master ${t('Master')} · Alt. ${t('Alternance')}</small></div></div>
+    <div class="stat ${late?'alert':''}"><div class="k">À relancer</div><div class="v">${late}</div></div>
+    <div class="stat"><div class="k">Entretiens</div><div class="v">${by('Entretien')}</div></div>`;
+}
+
+function renderTabs(){
+  const s=searching();
+  $('tabs').innerHTML=VIEWS.map(v=>`<button class="tab" role="tab" data-v="${v.id}" aria-selected="${!s&&v.id===view}">${v.label}<span class="n">${rows.filter(r=>v.st.includes(r.statut)).length}</span></button>`).join('');
+}
+
+function statusClass(s){return s==='Entretien'?'s-active':''}
+
+function renderList(){
+  const list=filtered();
+  const active=FILTERS.some(id=>$(id).value)||!!$('f-q').value.trim();
+  FILTERS.forEach(id=>$(id).classList.toggle('on',!!$(id).value));
+  $('f-clear').hidden=!active;
+  $('result-note').hidden=!active||!rows.length;
+  $('result-note').textContent=`${list.length} offre${list.length>1?'s':''} trouvée${list.length>1?'s':''}`+(searching()?' dans toutes les offres':' dans l\'onglet '+VIEWS.find(x=>x.id===view).label);
+  if(!rows.length){
+    $('list').innerHTML=`<div class="empty"><b>Aucune offre pour l'instant</b>Ajoutez la première offre repérée avec « + Ajouter une offre ». Elle arrive dans le Backlog, en attendant de décider si on postule.</div>`;return;
+  }
+  if(!list.length){$('list').innerHTML=active?`<div class="empty"><b>Aucune offre ne correspond</b>Essayez un autre mot-clé ou retirez un filtre.</div>`:`<div class="empty"><b>Rien dans cette vue</b>Changez d'onglet ou de filtre.</div>`;return}
+  const backlog=view==='backlog'&&!searching();
+  $('list').innerHTML=`<table><thead><tr>
+    <th>N°</th><th>Type</th><th>Poste / Formation</th><th>Ville</th><th>Source</th>
+    ${backlog?'<th>Priorité</th><th>Date limite</th>':'<th>CV</th><th>Envoi</th><th>Relance</th>'}
+    <th>Statut</th><th></th></tr></thead><tbody>${list.map(r=>{
+      const rel=relanceOf(r), late=needsRelance(r);
+      return `<tr>
+      <td class="ref">${r.ref?'#'+r.ref:'—'}</td>
+      <td><span class="chip t-${esc(r.type)}">${esc(r.type)}</span></td>
+      <td class="title-cell"><b>${hl(r.poste)}</b><span>${hl(r.entreprise||'')}</span>${r.lien?`<br><a href="${esc(r.lien)}" target="_blank" rel="noopener">Voir l'offre ↗</a>`:''}</td>
+      <td>${r.ville?hl(r.ville):'—'}</td>
+      <td>${r.source?hl(r.source):'—'}</td>
+      ${backlog?`<td class="p-${esc(r.priorite)}">${esc(r.priorite||'—')}</td><td class="mono">${fmt(r.dateLimite)}</td>`
+        :`<td class="cv">${esc(r.cv||'—')} <span class="chip">${esc(r.lang||'FR')}</span>${r.lettre==='Oui'?' <span class="chip">+ LM</span>':''}</td><td class="mono">${fmt(r.dateEnvoi)}</td><td class="mono ${late?'late':''}">${['Envoyée','Relancée'].includes(r.statut)?fmt(rel):'—'}</td>`}
+      <td><select class="statut-select ${statusClass(r.statut)}" data-id="${r.id}" aria-label="Statut" ${readOnly?'disabled':''}>${STATUTS.map(s=>`<option ${s===r.statut?'selected':''}>${s}</option>`).join('')}</select></td>
+      <td><button class="edit" data-id="${r.id}">${readOnly?'Voir':'Modifier'}</button></td></tr>`}).join('')}</tbody></table>`;
+}
+function render(){refreshVilles();renderSummary();renderTabs();renderList()}
+
+// Écriture
+function withStatut(r,s){
+  const out={...r,statut:s,updatedAt:new Date().toISOString()};
+  if(s!==r.statut) out.history=[...(r.history||[]),{d:today(),s}];
+  if(s==='Envoyée'&&!out.dateEnvoi) out.dateEnvoi=today();
+  if(!SENT.includes(s)) out.dateEnvoi='';
+  return out;
+}
+async function quickStatus(id,s){
+  const r=rows.find(x=>x.id===id); if(!r||!db) return;
+  const next=withStatut(r,s); const {id:_,...body}=next;
+  try{await db.collection('candidatures').doc(id).set(body);toast('Statut : '+s)}
+  catch(e){handleWriteError(e)}
+}
+function handleWriteError(e){
+  if(e&&e.code==='duplicate'){showDup({block:true,msg:e.message||'Cette offre existe déjà.'});return}
+  if(e&&e.code==='invalid_argument'){readOnly=true;render();showError("Vous pouvez consulter le suivi, mais pas le modifier. Demandez à Hamdi un accès Contributeur.")}
+  else if(e&&e.code==='quota_exceeded') showError("Le suivi est plein : supprimez d'anciennes offres pour en ajouter.");
+  else showError("L'enregistrement a échoué. Réessayez dans un instant.");
+}
+
+// Panneau
+const F=['type','statut','poste','entreprise','ville','lien','source','priorite','cv','lang','lettre','limite','envoi','contact','notes'];
+const KEY={limite:'dateLimite',envoi:'dateEnvoi'};
+function openForm(r){
+  editing=r||null; deleteArmed=false;
+  $('form-title').textContent=r?(readOnly?'Offre':'Modifier l\'offre')+(r.ref?' #'+r.ref:''):'Nouvelle offre';
+  dupOk=false; $('dup').hidden=true;
+  const def={type:'Emploi',statut:'Repérée',priorite:'Moyenne',cv:CVS[0],lang:'FR',lettre:'Non',source:SOURCES[0]};
+  F.forEach(f=>{$('i-'+f).value=(r?r[KEY[f]||f]:def[f])??'';$('i-'+f).disabled=readOnly});
+  if(!r) $('i-statut').value='Repérée';
+  $('delete-btn').hidden=!r||readOnly; $('delete-btn').textContent='Supprimer'; $('delete-btn').classList.remove('armed');
+  $('save-btn').hidden=readOnly;
+  const h=r?.history||[];
+  $('history').hidden=!h.length;
+  $('history-list').innerHTML=h.map(x=>`<li><span class="mono">${fmt(x.d)}</span> · ${esc(x.s)}</li>`).join('');
+  updateHint();
+  $('overlay').hidden=false; setTimeout(()=>$('i-poste').focus(),30);
+}
+// ---- Détection des doublons ----
+let dupOk=false;
+const TRACKING=/^(utm_.*|trk|trackingid|refid|ref|src|from|source|fbclid|gclid|origin|position|pagenum|currentjobid)$/i;
+function normLink(u){
+  u=(u||'').trim(); if(!u) return '';
+  try{
+    const x=new URL(u.includes('://')?u:'https://'+u);
+    const keep=[...x.searchParams].filter(([k])=>!TRACKING.test(k)).sort(([a],[b])=>a.localeCompare(b));
+    const q=keep.map(([k,v])=>k+'='+v).join('&');
+    return x.hostname.replace(/^www\./,'').toLowerCase()+x.pathname.replace(/\/+$/,'')+(q?'?'+q:'');
+  }catch(_){return u.toLowerCase().replace(/\/+$/,'')}
+}
+const key3=d=>[d.poste,d.entreprise,d.ville].map(v=>norm(v).replace(/\(?[fh]\s*\/\s*[fh]\)?/g,'').replace(/[^a-z0-9]+/g,' ').trim()).join('|');
+function findDuplicate(d,selfId){
+  const l=normLink(d.lien), k=key3(d), others=rows.filter(r=>r.id!==selfId);
+  return {
+    strong:l?others.find(r=>normLink(r.lien)===l):null,
+    probable:(d.entreprise&&d.poste)?others.find(r=>key3(r)===k):null
+  };
+}
+const dupLabel=r=>(r.ref?'#'+r.ref+' ':'')+'« '+(r.poste||'')+' »'+(r.entreprise?' chez '+r.entreprise:'')+' ('+(r.statut||'')+')';
+function showDup({block,msg,row}){
+  const el=$('dup'); el.className='dup'+(block?' block':''); el.hidden=false;
+  el.innerHTML='<span></span>'+(row?'<button type="button" class="btn" id="dup-open">Ouvrir l\'offre existante</button>':'');
+  el.firstChild.textContent=msg;
+  if(row) $('dup-open').onclick=()=>openForm(rows.find(x=>x.id===row.id)||row);
+}
+['i-poste','i-entreprise','i-ville','i-lien'].forEach(id=>$(id).addEventListener('input',()=>{dupOk=false;$('dup').hidden=true}));
+
+function closeForm(){$('overlay').hidden=true;editing=null}
+function updateHint(){const e=$('i-envoi').value;$('relance-hint').textContent=e?'Relance prévue le '+fmt(addDays(e,RELANCE_JOURS)):'Relance prévue '+RELANCE_JOURS+' jours après l\'envoi'}
+$('i-envoi').addEventListener('input',updateHint);
+
+$('form').addEventListener('submit',async ev=>{
+  ev.preventDefault(); if(!db||readOnly) return;
+  const poste=$('i-poste').value.trim();
+  if(!poste){$('i-poste').focus();showError('Indiquez au moins le poste ou la formation.');return}
+  showError('');
+  const data={}; F.forEach(f=>data[KEY[f]||f]=$('i-'+f).value.trim?$('i-'+f).value.trim():$('i-'+f).value);
+  const dup=findDuplicate(data,editing?.id);
+  if(dup.strong){showDup({block:true,msg:`Cette offre existe déjà (même lien) : ${dupLabel(dup.strong)}.`,row:dup.strong});return}
+  if(dup.probable&&!dupOk){dupOk=true;showDup({block:false,msg:`Offre peut-être en double : ${dupLabel(dup.probable)} (même poste, entreprise et ville). Cliquez à nouveau sur « Enregistrer » pour l'ajouter quand même.`,row:dup.probable});return}
+  const now=new Date().toISOString();
+  try{
+    if(editing){
+      let next={...editing,...data};
+      if(data.statut!==editing.statut){next=withStatut({...editing,...data,statut:editing.statut},data.statut)}
+      next.updatedAt=now; const {id,...body}=next;
+      await db.collection('candidatures').doc(editing.id).set(body);
+      toast('Offre enregistrée');
+    }else{
+      if(data.statut==='Envoyée'&&!data.dateEnvoi) data.dateEnvoi=today();
+      await db.collection('candidatures').doc().set({...data,createdAt:now,updatedAt:now,history:[{d:today(),s:data.statut}]});
+      toast('Offre ajoutée');
+    }
+    closeForm();
+  }catch(e){handleWriteError(e)}
+});
+$('cancel-btn').onclick=closeForm;
+$('overlay').addEventListener('click',e=>{if(e.target.id==='overlay')closeForm()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('overlay').hidden)closeForm()});
+$('delete-btn').onclick=async()=>{
+  if(!editing||!db) return;
+  if(!deleteArmed){deleteArmed=true;$('delete-btn').textContent='Confirmer la suppression';$('delete-btn').classList.add('armed');return}
+  try{await db.collection('candidatures').doc(editing.id).delete();toast('Offre supprimée');closeForm()}catch(e){handleWriteError(e)}
+};
+
+// Interactions de la liste
+$('add-btn').onclick=()=>openForm(null);
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b){view=b.dataset.v;$('f-q').value='';$('f-statut').value='';render()}});
+FILTERS.forEach(id=>$(id).addEventListener('change',()=>{renderTabs();renderList()}));
+let qTimer;$('f-q').addEventListener('input',()=>{clearTimeout(qTimer);qTimer=setTimeout(()=>{renderTabs();renderList()},150)});
+$('f-clear').onclick=()=>{$('f-q').value='';FILTERS.forEach(id=>$(id).value='');renderTabs();renderList();$('f-q').focus()};
+$('list').addEventListener('change',e=>{if(e.target.classList.contains('statut-select'))quickStatus(e.target.dataset.id,e.target.value)});
+$('list').addEventListener('click',e=>{const b=e.target.closest('.edit');if(b)openForm(rows.find(r=>r.id===b.dataset.id))});
+
+// Export CSV (ouvrable dans Excel)
+$('export-btn').onclick=async()=>{
+  const cols=[['type','Type'],['poste','Poste / Formation'],['entreprise','Entreprise / École'],['ville','Ville'],['lien','Lien'],['source','Source'],['priorite','Priorité'],['dateLimite','Date limite'],['cv','Version CV'],['lang','Langue CV'],['lettre','Lettre'],['dateEnvoi','Date envoi'],['relance','Date relance'],['statut','Statut'],['contact','Contact'],['notes','Notes']];
+  const cell=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  const lines=[cols.map(c=>cell(c[1])).join(';'),...rows.map(r=>cols.map(c=>cell(c[0]==='relance'?relanceOf(r):r[c[0]])).join(';'))];
+  try{await downloads.save({filename:'candidatures-yosra-'+today()+'.csv',data:'﻿'+lines.join('\r\n')})}
+  catch(e){if(e&&e.code!=='declined')showError("L'export n'est pas disponible ici.")}
+};
+
+// ---- Couche de données locale : même interface que db de claude.ai, branchée sur l'API REST ----
+function newId(){return (crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2,10))}
+function makeApiDb(base){
+  const listeners=[];
+  async function call(url,opts){const r=await fetch(url,opts);if(!r.ok){let m='';try{m=(await r.json()).detail}catch(_){};throw {code:r.status===409?'duplicate':r.status===422?'invalid_argument':'unavailable',message:m}}return r.status===204?null:r.json()}
+  async function refresh(){
+    const data=await call(base);
+    const snap={docs:data.map(x=>({id:x.id,data:()=>({...x.data,ref:x.ref})}))};
+    listeners.forEach(l=>l.next(snap));
+  }
+  return {collection(){return{
+    doc(id){id=id||newId();return{
+      async set(body){await call(base+'/'+encodeURIComponent(id),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});await refresh()},
+      async delete(){await call(base+'/'+encodeURIComponent(id),{method:'DELETE'});await refresh()}
+    }},
+    onSnapshot(next,error){
+      const l={next};listeners.push(l);
+      refresh().catch(error);
+      // Rafraîchissement toutes les 5 s pour voir les modifications faites depuis un autre navigateur
+      const t=setInterval(()=>refresh().catch(error),5000);
+      return()=>clearInterval(t);
+    }
+  }}};
+}
+const localDownloads={async save({filename,data}){
+  const url=URL.createObjectURL(new Blob([data],{type:'text/csv;charset=utf-8'}));
+  const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);return {status:'saved'};
+}};
+
+render();
+(async()=>{
+  // Version locale : l'API Python (FastAPI + PostgreSQL) remplace la base de claude.ai
+  db=makeApiDb('/api/candidatures');
+  downloads=localDownloads; $('export-btn').hidden=false;
+  db.collection('candidatures').onSnapshot(
+    s=>{rows=s.docs.map(x=>({id:x.id,...x.data()}));showError('');render()},
+    e=>showError("Impossible de joindre l'API locale. Vérifiez que les conteneurs tournent (docker compose ps)."));
+})();
+</script>
+
+</body>
+</html>
