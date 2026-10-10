@@ -1,3 +1,4 @@
+
 """API du tracker de candidatures avec authentification."""
 
 import asyncio
@@ -78,6 +79,9 @@ pool = ConnectionPool(
     min_size=1,
     max_size=5,
     open=False,
+    # Neon met la base en veille : on vérifie la connexion avant de la réutiliser
+    check=ConnectionPool.check_connection,
+    max_idle=240,
 )
 
 

@@ -1,4 +1,4 @@
-# Tracker candidatures Yosra : version locale
+# Tracker candidatures Yosra — version locale
 
 - **Front** : `backend/static/index.html` (même page que sur claude.ai)
 - **API** : Python / FastAPI (`backend/main.py`)
@@ -22,7 +22,7 @@ En option A (venv), exporter les mêmes variables avant `uvicorn` :
 
 5 mauvais mots de passe depuis la même IP bloquent les essais pendant 5 minutes.
 
-## Option A : Python en local (venv) + Postgres dans Docker
+## Option A — Python en local (venv) + Postgres dans Docker
 
 ```bash
 cd tracker-local
@@ -37,7 +37,7 @@ uvicorn main:app --reload --port 8000
 
 Ouvrir http://localhost:8000
 
-## Option B : tout dans Docker
+## Option B — tout dans Docker
 
 ```bash
 cd tracker-local
@@ -45,6 +45,20 @@ docker compose --profile full up -d --build
 ```
 
 Ouvrir http://localhost:8000
+
+## Option C — en ligne gratuitement (Render + Neon)
+
+1. **Neon** (neon.com) : créer un projet, région *AWS Frankfurt*, copier la chaîne de connexion (`postgresql://…?sslmode=require`).
+2. **GitHub** : pousser ce dossier (le `.env` est ignoré).
+3. **Render** (render.com) : *New → Blueprint* → choisir le repo. `render.yaml` crée le service ; saisir `DATABASE_URL` et `APP_PASSWORD`.
+4. Ouvrir `https://tracker-yosra.onrender.com` (premier accès après 15 min d'inactivité : ~1 min de réveil).
+
+Reprendre les données locales dans Neon :
+
+```bash
+docker compose exec -T db pg_dump -U tracker --no-owner --no-acl tracker > backup.sql
+psql "postgresql://…neon…?sslmode=require" < backup.sql
+```
 
 ## API
 

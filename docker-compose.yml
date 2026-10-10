@@ -20,7 +20,7 @@ services:
     environment:
       DATABASE_URL: postgresql://tracker:tracker@db:5432/tracker
       APP_USERNAME: "${APP_USERNAME:-yosra}"
-      APP_PASSWORD: "${APP_PASSWORD:-yosra}"
+      APP_PASSWORD: "${APP_PASSWORD:?Définir APP_PASSWORD dans .env}"
       SECRET_KEY: "${SECRET_KEY:?Définir SECRET_KEY dans .env (openssl rand -hex 32)}"
       COOKIE_SECURE: "${COOKIE_SECURE:-false}"   # true derrière HTTPS
     ports:

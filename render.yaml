@@ -1,0 +1,22 @@
+# Blueprint Render : New > Blueprint > choisir ce repo
+services:
+  - type: web
+    name: tracker-yosra
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: frankfurt
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # à saisir : chaîne de connexion Neon (…?sslmode=require)
+      - key: APP_USERNAME
+        value: yosra
+      - key: APP_PASSWORD
+        sync: false          # à saisir au premier déploiement
+      - key: SECRET_KEY
+        generateValue: true  # générée par Render, stable entre redémarrages
+      - key: COOKIE_SECURE
+        value: "true"

@@ -13,5 +13,5 @@ RUN useradd --create-home app
 USER app
 
 EXPOSE 8000
-#CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]
+# PORT est imposé par Render ; --proxy-headers pour récupérer la vraie IP client (anti-bruteforce)
+CMD ["sh", "-c", "exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]
