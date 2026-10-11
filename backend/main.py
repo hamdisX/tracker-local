@@ -13,7 +13,7 @@ import secrets
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
-from urllib.parse import parse_qsl, urlencode, urlsplit
+from urllib.parse import parse_qsl, quote, urlencode, urlsplit
 
 import psycopg
 from psycopg.types.json import Jsonb
@@ -109,6 +109,23 @@ async def lifespan(_: FastAPI):
             conn.execute(
                 "ALTER TABLE candidatures "
                 "ADD COLUMN IF NOT EXISTS lien_norm TEXT NOT NULL DEFAULT ''"
+            )
+
+            # Bibliothèque de CVs : fichiers stockés en base (le disque Render est éphémère)
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS cvs (
+                    id          BIGSERIAL PRIMARY KEY,
+                    version     TEXT NOT NULL,
+                    lang        TEXT NOT NULL,
+                    filename    TEXT NOT NULL,
+                    mime        TEXT NOT NULL,
+                    size        INTEGER NOT NULL,
+                    data        BYTEA NOT NULL,
+                    uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    UNIQUE (version, lang)
+                )
+                """
             )
 
             rows = conn.execute(
@@ -372,6 +389,106 @@ def delete_candidature(doc_id: str):
             (doc_id,),
         )
 
+    return Response(status_code=204)
+
+
+# ---------------------------------------------------------------------------
+# CVs : un fichier par (version, langue), consultable depuis l'appli
+# ---------------------------------------------------------------------------
+
+CV_MAX_BYTES = int(os.getenv("CV_MAX_MB", "5")) * 1024 * 1024
+CV_TYPES = {
+    b"%PDF": ("application/pdf", ".pdf"),
+    b"PK\x03\x04": (
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ".docx",
+    ),
+}
+LABEL_RE = re.compile(r"^[\w À-ÿ'’/()+.-]{1,60}$")
+
+
+def _cv_meta(row):
+    return {
+        "id": row[0], "version": row[1], "lang": row[2], "filename": row[3],
+        "mime": row[4], "size": row[5], "uploadedAt": row[6].isoformat(),
+    }
+
+
+@app.get("/api/cvs")
+def list_cvs():
+    with pool.connection() as conn:
+        rows = conn.execute(
+            "SELECT id, version, lang, filename, mime, size, uploaded_at "
+            "FROM cvs ORDER BY version, lang"
+        ).fetchall()
+    return [_cv_meta(r) for r in rows]
+
+
+@app.put("/api/cvs")
+async def upload_cv(request: Request, version: str, lang: str, filename: str = "cv"):
+    """Envoi brut du fichier (corps = octets du PDF/DOCX). Remplace l'existant."""
+    if not LABEL_RE.match(version) or lang not in ("FR", "EN"):
+        raise HTTPException(422, "Version ou langue invalide")
+
+    if int(request.headers.get("content-length") or 0) > CV_MAX_BYTES:
+        raise HTTPException(413, f"Fichier trop lourd (max {CV_MAX_BYTES // 1048576} Mo)")
+
+    data = await request.body()
+    if not data:
+        raise HTTPException(422, "Fichier vide")
+    if len(data) > CV_MAX_BYTES:
+        raise HTTPException(413, f"Fichier trop lourd (max {CV_MAX_BYTES // 1048576} Mo)")
+
+    kind = next((v for magic, v in CV_TYPES.items() if data.startswith(magic)), None)
+    if not kind:
+        raise HTTPException(415, "Format accepté : PDF ou Word (.docx)")
+    mime, ext = kind
+
+    name = Path(filename).name.strip()[:120] or "cv"
+    if not name.lower().endswith(ext):
+        name = Path(name).stem + ext
+
+    with pool.connection() as conn:
+        row = conn.execute(
+            """
+            INSERT INTO cvs (version, lang, filename, mime, size, data)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            ON CONFLICT (version, lang) DO UPDATE
+                SET filename = EXCLUDED.filename, mime = EXCLUDED.mime,
+                    size = EXCLUDED.size, data = EXCLUDED.data, uploaded_at = now()
+            RETURNING id, version, lang, filename, mime, size, uploaded_at
+            """,
+            (version, lang, name, mime, len(data), data),
+        ).fetchone()
+    return _cv_meta(row)
+
+
+@app.get("/api/cvs/{cv_id}/file")
+def get_cv_file(cv_id: int, download: bool = False):
+    with pool.connection() as conn:
+        row = conn.execute(
+            "SELECT filename, mime, data FROM cvs WHERE id = %s", (cv_id,)
+        ).fetchone()
+    if not row:
+        raise HTTPException(404, "CV introuvable")
+
+    filename, mime, data = row
+    disposition = "attachment" if download or mime != "application/pdf" else "inline"
+    return Response(
+        content=bytes(data),
+        media_type=mime,
+        headers={
+            "Content-Disposition": f"{disposition}; filename*=UTF-8''{quote(filename)}",
+            "Cache-Control": "private, no-store",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
+@app.delete("/api/cvs/{cv_id}", status_code=204)
+def delete_cv(cv_id: int):
+    with pool.connection() as conn:
+        conn.execute("DELETE FROM cvs WHERE id = %s", (cv_id,))
     return Response(status_code=204)
 
 
