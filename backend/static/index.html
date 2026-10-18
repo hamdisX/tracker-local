@@ -70,6 +70,7 @@ mark{background:var(--warn-bg);color:inherit;border-radius:3px;padding:0 1px}
 
 .table-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px}
 table{width:100%;border-collapse:collapse;min-width:900px}
+th.sortable{cursor:pointer;user-select:none}th.sortable:hover{color:var(--fg)}th .arr{font-size:.65rem;margin-left:3px}
 th{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
 td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
 tr:last-child td{border-bottom:0}
@@ -168,6 +169,7 @@ textarea{min-height:80px;resize:vertical}
       <select id="f-statut" aria-label="Filtrer par statut"><option value="">Tous les statuts</option></select>
       <select id="f-ville" aria-label="Filtrer par ville"><option value="">Toutes les villes</option></select>
       <select id="f-source" aria-label="Filtrer par source"><option value="">Toutes les sources</option></select>
+      <select id="f-priorite" aria-label="Filtrer par priorité"><option value="">Toutes les priorités</option><option>Haute</option><option>Moyenne</option><option>Basse</option></select>
       <select id="f-cv" aria-label="Filtrer par version de CV"><option value="">Toutes les versions de CV</option></select>
       <button class="btn" id="f-clear" hidden>Effacer les filtres</button>
     </div>
@@ -245,6 +247,8 @@ const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth
 function addDays(iso,n){if(!iso)return '';const [y,m,d]=iso.split('-').map(Number);const dt=new Date(y,m-1,d+n);return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')}
 const fmt=iso=>{if(!iso)return '—';const [y,m,d]=iso.split('-');return d+'/'+m+'/'+y.slice(2)};
 const relanceOf=r=>r.dateEnvoi?addDays(r.dateEnvoi,RELANCE_JOURS):'';
+// Date à laquelle l'offre est passée en « Envoyée » (historique), à défaut la date d'envoi saisie ; vide si pas encore envoyée
+const sentDate=r=>{const h=(r.history||[]).filter(x=>x.s==='Envoyée').map(x=>x.d).sort().pop();return h||r.dateEnvoi||''};
 const needsRelance=r=>['Envoyée','Relancée'].includes(r.statut)&&r.dateEnvoi&&relanceOf(r)<=today();
 
 function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>el.hidden=true,2200)}
@@ -277,10 +281,22 @@ function hl(text){
 }
 
 const norm=s=>String(s??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
-const FILTERS=['f-type','f-statut','f-ville','f-source','f-cv'];
+const FILTERS=['f-type','f-statut','f-ville','f-source','f-priorite','f-cv'];
 function searching(){return !!($('f-q').value.trim()||$('f-statut').value)}
+// Tri au clic sur un titre de colonne ; sans clic, tri par défaut de l'onglet
+let sort=null;
+const SORT_VAL={
+  ref:r=>r.ref||0, type:r=>norm(r.type), poste:r=>norm(r.poste), ville:r=>norm(r.ville), source:r=>norm(r.source),
+  priorite:r=>PRIO[r.priorite]??'', datePublication:r=>r.datePublication||'', dateLimite:r=>r.dateLimite||'',
+  cv:r=>norm(r.cv), dateEnvoi:r=>r.dateEnvoi||'', relance:r=>relanceOf(r), statut:r=>STATUTS.indexOf(r.statut)
+};
+const DATE_KEYS=['datePublication','dateLimite','dateEnvoi','relance','ref'];   // 1er clic : plus récent / plus grand en premier
+function th(key,label){
+  const on=sort&&sort.key===key;
+  return `<th class="sortable" data-sort="${key}" aria-sort="${on?(sort.dir==='asc'?'ascending':'descending'):'none'}">${label}${on?`<span class="arr">${sort.dir==='asc'?'▲':'▼'}</span>`:''}</th>`;
+}
 function filtered(){
-  const v=VIEWS.find(x=>x.id===view), ft=$('f-type').value, fc=$('f-cv').value, fs=$('f-statut').value, fv=$('f-ville').value, fo=$('f-source').value;
+  const v=VIEWS.find(x=>x.id===view), ft=$('f-type').value, fc=$('f-cv').value, fs=$('f-statut').value, fv=$('f-ville').value, fo=$('f-source').value, fp=$('f-priorite').value;
   const words=norm($('f-q').value).split(/\s+/).filter(Boolean);
   // Une recherche par mot-clé ou par statut porte sur toutes les offres, quel que soit l'onglet
   const st=searching()?STATUTS:v.st;
@@ -291,11 +307,20 @@ function filtered(){
     if(fs&&r.statut!==fs)return false;
     if(fv&&norm(r.ville)!==norm(fv))return false;
     if(fo&&r.source!==fo)return false;
+    if(fp&&r.priorite!==fp)return false;
     if(words.length){const hay=norm([r.ref?'#'+r.ref:'',r.ref,r.poste,r.entreprise,r.ville,r.source,r.type,r.statut,r.contact,r.notes,r.cv].join(' '));if(!words.every(w=>hay.includes(w)))return false}
     return true;
   });
-  if(view==='backlog') list.sort((a,b)=>(PRIO[a.priorite]??1)-(PRIO[b.priorite]??1)||(a.dateLimite||'9999').localeCompare(b.dateLimite||'9999'));
-  else if(view==='encours') list.sort((a,b)=>(needsRelance(b)-needsRelance(a))||(relanceOf(a)||'9999').localeCompare(relanceOf(b)||'9999'));
+  if(sort){
+    const g=SORT_VAL[sort.key], d=sort.dir==='desc'?-1:1;
+    list.sort((a,b)=>{
+      const x=g(a), y=g(b), ex=x===''||x==null, ey=y===''||y==null;
+      if(ex||ey) return ex===ey?0:ex?1:-1;   // valeurs vides toujours en bas
+      return (typeof x==='number'?x-y:String(x).localeCompare(String(y),'fr'))*d||(b.ref||0)-(a.ref||0);
+    });
+  }
+  else if(view==='backlog') list.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')||(b.ref||0)-(a.ref||0));
+  else if(view==='encours') list.sort((a,b)=>sentDate(b).localeCompare(sentDate(a))||(b.ref||0)-(a.ref||0));
   else list.sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||''));
   return list;
 }
@@ -333,9 +358,9 @@ function renderList(){
   if(!list.length){$('list').innerHTML=active?`<div class="empty"><b>Aucune offre ne correspond</b>Essayez un autre mot-clé ou retirez un filtre.</div>`:`<div class="empty"><b>Rien dans cette vue</b>Changez d'onglet ou de filtre.</div>`;return}
   const backlog=view==='backlog'&&!searching();
   $('list').innerHTML=`<table><thead><tr>
-    <th>N°</th><th>Type</th><th>Poste / Formation</th><th>Ville</th><th>Source</th>
-    ${backlog?'<th>Priorité</th><th>Publiée</th><th>Date limite</th>':'<th>CV</th><th>Envoi</th><th>Relance</th>'}
-    <th>Statut</th><th></th></tr></thead><tbody>${list.map(r=>{
+    ${th('ref','N°')}${th('type','Type')}${th('poste','Poste / Formation')}${th('ville','Ville')}${th('source','Source')}
+    ${backlog?th('priorite','Priorité')+th('datePublication','Publiée')+th('dateLimite','Date limite'):th('cv','CV')+th('dateEnvoi','Envoi')+th('relance','Relance')}
+    ${th('statut','Statut')}<th></th></tr></thead><tbody>${list.map(r=>{
       const rel=relanceOf(r), late=needsRelance(r);
       return `<tr>
       <td class="ref">${r.ref?'#'+r.ref:'—'}</td>
@@ -519,7 +544,13 @@ $('cv-file').addEventListener('change',async()=>{
 // Interactions de la liste
 $('logout-btn').onclick=async()=>{try{await fetch('/api/logout',{method:'POST'})}finally{location.replace('/login')}};
 $('add-btn').onclick=()=>openForm(null);
-$('tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b){view=b.dataset.v;$('f-q').value='';$('f-statut').value='';render()}});
+$('list').addEventListener('click',e=>{
+  const h=e.target.closest('th.sortable'); if(!h) return;
+  const k=h.dataset.sort;
+  sort=sort&&sort.key===k?{key:k,dir:sort.dir==='asc'?'desc':'asc'}:{key:k,dir:DATE_KEYS.includes(k)?'desc':'asc'};
+  renderList();
+});
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b){view=b.dataset.v;sort=null;$('f-q').value='';$('f-statut').value='';render()}});
 FILTERS.forEach(id=>$(id).addEventListener('change',()=>{renderTabs();renderList()}));
 let qTimer;$('f-q').addEventListener('input',()=>{clearTimeout(qTimer);qTimer=setTimeout(()=>{renderTabs();renderList()},150)});
 $('f-clear').onclick=()=>{$('f-q').value='';FILTERS.forEach(id=>$(id).value='');renderTabs();renderList();$('f-q').focus()};
