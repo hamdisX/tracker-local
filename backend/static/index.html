@@ -65,6 +65,7 @@ button,select,input,textarea{font:inherit;color:inherit}
 .search-bar{display:flex;flex-direction:column;gap:10px}
 #f-q{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 14px;font-size:1rem}
 .filters select.on{border-color:var(--accent);color:var(--accent)}
+.pager{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:space-between;margin-top:10px;color:var(--muted);font-size:.9rem}.pager .nav{display:flex;align-items:center;gap:8px}.pager .btn{padding:5px 12px}.pager .btn:disabled{opacity:.45;cursor:default}.pager select{padding:5px 8px}
 .result-note{margin:0;color:var(--muted);font-size:.9rem}
 mark{background:var(--warn-bg);color:inherit;border-radius:3px;padding:0 1px}
 
@@ -178,6 +179,7 @@ textarea{min-height:80px;resize:vertical}
 
   <div id="error" class="msg" hidden></div>
   <div class="table-wrap" id="list"></div>
+  <div class="pager" id="pager" hidden></div>
 </div>
 
 <div class="overlay" id="overlay" hidden>
@@ -284,7 +286,9 @@ const norm=s=>String(s??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(
 const FILTERS=['f-type','f-statut','f-ville','f-source','f-priorite','f-cv'];
 function searching(){return !!($('f-q').value.trim()||$('f-statut').value)}
 // Tri au clic sur un titre de colonne ; sans clic, tri par défaut de l'onglet
-let sort=null;
+let sort=null, page=1, pageSize=25;
+try{const n=+localStorage.getItem('pageSize');if([10,25,50,100].includes(n))pageSize=n}catch(_){}
+const resetPage=()=>{page=1};
 const SORT_VAL={
   ref:r=>r.ref||0, type:r=>norm(r.type), poste:r=>norm(r.poste), ville:r=>norm(r.ville), source:r=>norm(r.source),
   priorite:r=>PRIO[r.priorite]??'', datePublication:r=>r.datePublication||'', dateLimite:r=>r.dateLimite||'',
@@ -346,21 +350,25 @@ function renderTabs(){
 function statusClass(s){return s==='Entretien'?'s-active':''}
 
 function renderList(){
-  const list=filtered();
+  const all=filtered(), list=all;
   const active=FILTERS.some(id=>$(id).value)||!!$('f-q').value.trim();
   FILTERS.forEach(id=>$(id).classList.toggle('on',!!$(id).value));
   $('f-clear').hidden=!active;
   $('result-note').hidden=!active||!rows.length;
   $('result-note').textContent=`${list.length} offre${list.length>1?'s':''} trouvée${list.length>1?'s':''}`+(searching()?' dans toutes les offres':' dans l\'onglet '+VIEWS.find(x=>x.id===view).label);
+  $('pager').hidden=true;
   if(!rows.length){
     $('list').innerHTML=`<div class="empty"><b>Aucune offre pour l'instant</b>Ajoutez la première offre repérée avec « + Ajouter une offre ». Elle arrive dans le Backlog, en attendant de décider si on postule.</div>`;return;
   }
   if(!list.length){$('list').innerHTML=active?`<div class="empty"><b>Aucune offre ne correspond</b>Essayez un autre mot-clé ou retirez un filtre.</div>`:`<div class="empty"><b>Rien dans cette vue</b>Changez d'onglet ou de filtre.</div>`;return}
   const backlog=view==='backlog'&&!searching();
+  const pages=Math.max(1,Math.ceil(all.length/pageSize)); if(page>pages) page=pages;
+  const shown=all.slice((page-1)*pageSize,page*pageSize);
+  renderPager(all.length,pages,(page-1)*pageSize);
   $('list').innerHTML=`<table><thead><tr>
     ${th('ref','N°')}${th('type','Type')}${th('poste','Poste / Formation')}${th('ville','Ville')}${th('source','Source')}
     ${backlog?th('priorite','Priorité')+th('datePublication','Publiée')+th('dateLimite','Date limite'):th('cv','CV')+th('dateEnvoi','Envoi')+th('relance','Relance')}
-    ${th('statut','Statut')}<th></th></tr></thead><tbody>${list.map(r=>{
+    ${th('statut','Statut')}<th></th></tr></thead><tbody>${shown.map(r=>{
       const rel=relanceOf(r), late=needsRelance(r);
       return `<tr>
       <td class="ref">${r.ref?'#'+r.ref:'—'}</td>
@@ -372,6 +380,13 @@ function renderList(){
         :`<td class="cv">${cvCell(r)} <span class="chip">${esc(r.lang||'FR')}</span>${r.lettre==='Oui'?' <span class="chip">+ LM</span>':''}</td><td class="mono">${fmt(r.dateEnvoi)}</td><td class="mono ${late?'late':''}">${['Envoyée','Relancée'].includes(r.statut)?fmt(rel):'—'}</td>`}
       <td><select class="statut-select ${statusClass(r.statut)}" data-id="${r.id}" aria-label="Statut" ${readOnly?'disabled':''}>${STATUTS.map(s=>`<option ${s===r.statut?'selected':''}>${s}</option>`).join('')}</select></td>
       <td><button class="edit" data-id="${r.id}">${readOnly?'Voir':'Modifier'}</button></td></tr>`}).join('')}</tbody></table>`;
+}
+function renderPager(total,pages,offset){
+  const el=$('pager'); el.hidden=total<=10;
+  if(el.hidden) return;
+  el.innerHTML=`<span>${offset+1}–${Math.min(offset+pageSize,total)} sur ${total}</span>
+    <span class="nav"><button class="btn" data-p="${page-1}" ${page<=1?'disabled':''}>‹ Précédent</button>Page ${page} / ${pages}<button class="btn" data-p="${page+1}" ${page>=pages?'disabled':''}>Suivant ›</button></span>
+    <label>Par page <select id="page-size">${[10,25,50,100].map(n=>`<option ${n===pageSize?'selected':''}>${n}</option>`).join('')}</select></label>`;
 }
 function render(){refreshVilles();renderSummary();renderTabs();renderList()}
 
@@ -544,16 +559,18 @@ $('cv-file').addEventListener('change',async()=>{
 // Interactions de la liste
 $('logout-btn').onclick=async()=>{try{await fetch('/api/logout',{method:'POST'})}finally{location.replace('/login')}};
 $('add-btn').onclick=()=>openForm(null);
+$('pager').addEventListener('click',e=>{const b=e.target.closest('button[data-p]');if(b&&!b.disabled){page=+b.dataset.p;renderList();$('list').scrollIntoView({block:'start'})}});
+$('pager').addEventListener('change',e=>{if(e.target.id==='page-size'){pageSize=+e.target.value;try{localStorage.setItem('pageSize',pageSize)}catch(_){}resetPage();renderList()}});
 $('list').addEventListener('click',e=>{
   const h=e.target.closest('th.sortable'); if(!h) return;
   const k=h.dataset.sort;
   sort=sort&&sort.key===k?{key:k,dir:sort.dir==='asc'?'desc':'asc'}:{key:k,dir:DATE_KEYS.includes(k)?'desc':'asc'};
-  renderList();
+  resetPage(); renderList();
 });
-$('tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b){view=b.dataset.v;sort=null;$('f-q').value='';$('f-statut').value='';render()}});
-FILTERS.forEach(id=>$(id).addEventListener('change',()=>{renderTabs();renderList()}));
-let qTimer;$('f-q').addEventListener('input',()=>{clearTimeout(qTimer);qTimer=setTimeout(()=>{renderTabs();renderList()},150)});
-$('f-clear').onclick=()=>{$('f-q').value='';FILTERS.forEach(id=>$(id).value='');renderTabs();renderList();$('f-q').focus()};
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b){view=b.dataset.v;sort=null;resetPage();$('f-q').value='';$('f-statut').value='';render()}});
+FILTERS.forEach(id=>$(id).addEventListener('change',()=>{resetPage();renderTabs();renderList()}));
+let qTimer;$('f-q').addEventListener('input',()=>{clearTimeout(qTimer);qTimer=setTimeout(()=>{resetPage();renderTabs();renderList()},150)});
+$('f-clear').onclick=()=>{resetPage();$('f-q').value='';FILTERS.forEach(id=>$(id).value='');renderTabs();renderList();$('f-q').focus()};
 $('list').addEventListener('change',e=>{if(e.target.classList.contains('statut-select'))quickStatus(e.target.dataset.id,e.target.value)});
 $('list').addEventListener('click',e=>{const b=e.target.closest('.edit');if(b)openForm(rows.find(r=>r.id===b.dataset.id))});
 
