@@ -308,9 +308,37 @@ def health():
     return {"status": "ok"}
 
 
+TRASH_AFTER_DAYS = 35
+
+
+def auto_trash(conn) -> None:
+    """Backlog -> Corbeille pour les offres publiées depuis plus de 35 jours."""
+    conn.execute(
+        r"""
+        UPDATE candidatures
+        SET data = jsonb_set(
+                jsonb_set(
+                    jsonb_set(data, '{statut}', '"Corbeille"'),
+                    '{history}',
+                    COALESCE(data->'history', '[]'::jsonb)
+                        || jsonb_build_array(jsonb_build_object(
+                            'd', current_date::text, 's', 'Corbeille'))
+                ),
+                '{updatedAt}', to_jsonb(now()::text)
+            ),
+            updated_at = now()
+        WHERE data->>'statut' = 'Repérée'
+          AND data->>'datePublication' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+          AND (data->>'datePublication')::date <= current_date - %s
+        """,
+        (TRASH_AFTER_DAYS,),
+    )
+
+
 @app.get("/api/candidatures")
 def list_candidatures():
     with pool.connection() as conn:
+        auto_trash(conn)
         rows = conn.execute(
             "SELECT id, ref, data FROM candidatures ORDER BY ref DESC"
         ).fetchall()

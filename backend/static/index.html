@@ -193,6 +193,7 @@ textarea{min-height:80px;resize:vertical}
       <label>Version de CV<select id="i-cv"></select><a class="cv-open" id="i-cv-open" target="_blank" rel="noopener" hidden>Ouvrir ce CV ↗</a></label>
       <label>Langue du CV<select id="i-lang"><option>FR</option><option>EN</option></select></label>
       <label>Lettre de motivation<select id="i-lettre"><option>Non</option><option>Oui</option></select></label>
+      <label>Date de publication<input id="i-publication" type="date"><span class="hint">Backlog → Corbeille automatique après 35 jours</span></label>
       <label>Date limite<input id="i-limite" type="date"></label>
       <label>Date d'envoi<input id="i-envoi" type="date"><span class="hint" id="relance-hint">Relance prévue 10 jours après l'envoi</span></label>
       <label>Contact<input id="i-contact" placeholder="Nom ou email du recruteur"></label>
@@ -224,13 +225,14 @@ textarea{min-height:80px;resize:vertical}
 <div class="toast" id="toast" hidden></div>
 
 <script>
-const STATUTS=['Repérée','À postuler','Envoyée','Relancée','Entretien'];
+const STATUTS=['Repérée','À postuler','Envoyée','Relancée','Entretien','Corbeille'];
 const SOURCES=['LinkedIn','Indeed','Welcome to the Jungle','HelloWork','APEC','France Travail','Mon Master','Site de l\'école','Site de l\'entreprise','Cooptation / réseau','Autre'];
 const CVS=['Agile(Scrum Master)','Gestion de projet(CPF/S Master)','Électronique','Master / alternance','Biomédical'];
 const VIEWS=[
   {id:'backlog',label:'Backlog',st:['Repérée']},
   {id:'encours',label:'En cours',st:['À postuler','Envoyée','Relancée','Entretien']},
-  {id:'toutes',label:'Toutes',st:STATUTS}
+  {id:'toutes',label:'Toutes',st:STATUTS.filter(s=>s!=='Corbeille')},
+  {id:'corbeille',label:'Corbeille',st:['Corbeille']}
 ];
 const RELANCE_JOURS=10;
 const SENT=['Envoyée','Relancée','Entretien'];
@@ -332,7 +334,7 @@ function renderList(){
   const backlog=view==='backlog'&&!searching();
   $('list').innerHTML=`<table><thead><tr>
     <th>N°</th><th>Type</th><th>Poste / Formation</th><th>Ville</th><th>Source</th>
-    ${backlog?'<th>Priorité</th><th>Date limite</th>':'<th>CV</th><th>Envoi</th><th>Relance</th>'}
+    ${backlog?'<th>Priorité</th><th>Publiée</th><th>Date limite</th>':'<th>CV</th><th>Envoi</th><th>Relance</th>'}
     <th>Statut</th><th></th></tr></thead><tbody>${list.map(r=>{
       const rel=relanceOf(r), late=needsRelance(r);
       return `<tr>
@@ -341,7 +343,7 @@ function renderList(){
       <td class="title-cell"><b>${hl(r.poste)}</b><span>${hl(r.entreprise||'')}</span>${r.lien?`<br><a href="${esc(r.lien)}" target="_blank" rel="noopener">Voir l'offre ↗</a>`:''}</td>
       <td>${r.ville?hl(r.ville):'—'}</td>
       <td>${r.source?hl(r.source):'—'}</td>
-      ${backlog?`<td class="p-${esc(r.priorite)}">${esc(r.priorite||'—')}</td><td class="mono">${fmt(r.dateLimite)}</td>`
+      ${backlog?`<td class="p-${esc(r.priorite)}">${esc(r.priorite||'—')}</td><td class="mono">${fmt(r.datePublication)}</td><td class="mono">${fmt(r.dateLimite)}</td>`
         :`<td class="cv">${cvCell(r)} <span class="chip">${esc(r.lang||'FR')}</span>${r.lettre==='Oui'?' <span class="chip">+ LM</span>':''}</td><td class="mono">${fmt(r.dateEnvoi)}</td><td class="mono ${late?'late':''}">${['Envoyée','Relancée'].includes(r.statut)?fmt(rel):'—'}</td>`}
       <td><select class="statut-select ${statusClass(r.statut)}" data-id="${r.id}" aria-label="Statut" ${readOnly?'disabled':''}>${STATUTS.map(s=>`<option ${s===r.statut?'selected':''}>${s}</option>`).join('')}</select></td>
       <td><button class="edit" data-id="${r.id}">${readOnly?'Voir':'Modifier'}</button></td></tr>`}).join('')}</tbody></table>`;
@@ -370,8 +372,8 @@ function handleWriteError(e){
 }
 
 // Panneau
-const F=['type','statut','poste','entreprise','ville','lien','source','priorite','cv','lang','lettre','limite','envoi','contact','notes'];
-const KEY={limite:'dateLimite',envoi:'dateEnvoi'};
+const F=['type','statut','poste','entreprise','ville','lien','source','priorite','cv','lang','lettre','publication','limite','envoi','contact','notes'];
+const KEY={publication:'datePublication',limite:'dateLimite',envoi:'dateEnvoi'};
 function openForm(r){
   editing=r||null; deleteArmed=false;
   $('form-title').textContent=r?(readOnly?'Offre':'Modifier l\'offre')+(r.ref?' #'+r.ref:''):'Nouvelle offre';
@@ -526,7 +528,7 @@ $('list').addEventListener('click',e=>{const b=e.target.closest('.edit');if(b)op
 
 // Export CSV (ouvrable dans Excel)
 $('export-btn').onclick=async()=>{
-  const cols=[['type','Type'],['poste','Poste / Formation'],['entreprise','Entreprise / École'],['ville','Ville'],['lien','Lien'],['source','Source'],['priorite','Priorité'],['dateLimite','Date limite'],['cv','Version CV'],['lang','Langue CV'],['lettre','Lettre'],['dateEnvoi','Date envoi'],['relance','Date relance'],['statut','Statut'],['contact','Contact'],['notes','Notes']];
+  const cols=[['type','Type'],['poste','Poste / Formation'],['entreprise','Entreprise / École'],['ville','Ville'],['lien','Lien'],['source','Source'],['priorite','Priorité'],['datePublication','Date publication'],['dateLimite','Date limite'],['cv','Version CV'],['lang','Langue CV'],['lettre','Lettre'],['dateEnvoi','Date envoi'],['relance','Date relance'],['statut','Statut'],['contact','Contact'],['notes','Notes']];
   const cell=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
   const lines=[cols.map(c=>cell(c[1])).join(';'),...rows.map(r=>cols.map(c=>cell(c[0]==='relance'?relanceOf(r):r[c[0]])).join(';'))];
   try{await downloads.save({filename:'candidatures-yosra-'+today()+'.csv',data:'﻿'+lines.join('\r\n')})}
