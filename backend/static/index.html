@@ -236,9 +236,10 @@ const CVS=['Agile(Scrum Master)','Gestion de projet(CPF/S Master)','Électroniqu
 const VIEWS=[
   {id:'backlog',label:'Backlog',st:['Repérée']},
   {id:'encours',label:'En cours',st:['À postuler','Envoyée','Relancée','En discussion','Entretien']},
-  {id:'toutes',label:'Toutes',st:STATUTS.filter(s=>!HORS_TOUTES.includes(s))},
+  {id:'discussion',label:'En discussion',st:['En discussion']},
   {id:'cloturees',label:'Clôturées',st:['Clôturée']},
-  {id:'corbeille',label:'Corbeille',st:['Corbeille']}
+  {id:'corbeille',label:'Corbeille',st:['Corbeille']},
+  {id:'toutes',label:'Toutes',st:STATUTS.filter(s=>!HORS_TOUTES.includes(s))}
 ];
 const RELANCE_JOURS=10;
 const SENT=['Envoyée','Relancée','En discussion','Entretien'];
@@ -335,12 +336,11 @@ function renderSummary(){
   const by=s=>rows.filter(r=>r.statut===s).length;
   const isSent=r=>SENT.includes(r.statut);
   const sent=rows.filter(isSent).length;
-  const late=rows.filter(needsRelance).length;
   const t=k=>rows.filter(r=>r.type===k&&isSent(r)).length;
   $('summary').innerHTML=`
     <div class="stat"><div class="k">Backlog</div><div class="v">${by('Repérée')}</div></div>
     <div class="stat"><div class="k">Envoyées</div><div class="v">${sent} <small>Emploi ${t('Emploi')} · Master ${t('Master')} · Alt. ${t('Alternance')}</small></div></div>
-    <div class="stat ${late?'alert':''}"><div class="k">À relancer</div><div class="v">${late}</div></div>
+    <div class="stat"><div class="k">En discussion</div><div class="v">${by('En discussion')}</div></div>
     <div class="stat"><div class="k">Entretiens</div><div class="v">${by('Entretien')}</div></div>`;
 }
 
