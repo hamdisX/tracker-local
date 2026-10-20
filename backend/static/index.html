@@ -229,13 +229,15 @@ textarea{min-height:80px;resize:vertical}
 <div class="toast" id="toast" hidden></div>
 
 <script>
-const STATUTS=['Repérée','À postuler','Envoyée','Relancée','Entretien','Corbeille'];
+const STATUTS=['Repérée','À postuler','Envoyée','Relancée','Entretien','Clôturée','Corbeille'];
+const HORS_TOUTES=['Clôturée','Corbeille'];
 const SOURCES=['LinkedIn','Indeed','Welcome to the Jungle','HelloWork','APEC','France Travail','Mon Master','Site de l\'école','Site de l\'entreprise','Cooptation / réseau','Autre'];
 const CVS=['Agile(Scrum Master)','Gestion de projet(CPF/S Master)','Électronique','Master / alternance','Biomédical'];
 const VIEWS=[
   {id:'backlog',label:'Backlog',st:['Repérée']},
   {id:'encours',label:'En cours',st:['À postuler','Envoyée','Relancée','Entretien']},
-  {id:'toutes',label:'Toutes',st:STATUTS.filter(s=>s!=='Corbeille')},
+  {id:'toutes',label:'Toutes',st:STATUTS.filter(s=>!HORS_TOUTES.includes(s))},
+  {id:'cloturees',label:'Clôturées',st:['Clôturée']},
   {id:'corbeille',label:'Corbeille',st:['Corbeille']}
 ];
 const RELANCE_JOURS=10;
@@ -347,7 +349,7 @@ function renderTabs(){
   $('tabs').innerHTML=VIEWS.map(v=>`<button class="tab" role="tab" data-v="${v.id}" aria-selected="${!s&&v.id===view}">${v.label}<span class="n">${rows.filter(r=>v.st.includes(r.statut)).length}</span></button>`).join('');
 }
 
-function statusClass(s){return s==='Entretien'?'s-active':''}
+function statusClass(s){return s==='Entretien'?'s-active':s==='Clôturée'?'s-bad':''}
 
 function renderList(){
   const all=filtered(), list=all;
@@ -395,7 +397,8 @@ function withStatut(r,s){
   const out={...r,statut:s,updatedAt:new Date().toISOString()};
   if(s!==r.statut) out.history=[...(r.history||[]),{d:today(),s}];
   if(s==='Envoyée'&&!out.dateEnvoi) out.dateEnvoi=today();
-  if(!SENT.includes(s)) out.dateEnvoi='';
+  // Une offre clôturée garde sa date d'envoi
+  if(!SENT.includes(s)&&s!=='Clôturée') out.dateEnvoi='';
   return out;
 }
 async function quickStatus(id,s){
