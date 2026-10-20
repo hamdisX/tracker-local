@@ -229,19 +229,19 @@ textarea{min-height:80px;resize:vertical}
 <div class="toast" id="toast" hidden></div>
 
 <script>
-const STATUTS=['Repérée','À postuler','Envoyée','Relancée','Entretien','Clôturée','Corbeille'];
+const STATUTS=['Repérée','À postuler','Envoyée','Relancée','En discussion','Entretien','Clôturée','Corbeille'];
 const HORS_TOUTES=['Clôturée','Corbeille'];
 const SOURCES=['LinkedIn','Indeed','Welcome to the Jungle','HelloWork','APEC','France Travail','Mon Master','Site de l\'école','Site de l\'entreprise','Cooptation / réseau','Autre'];
 const CVS=['Agile(Scrum Master)','Gestion de projet(CPF/S Master)','Électronique','Master / alternance','Biomédical'];
 const VIEWS=[
   {id:'backlog',label:'Backlog',st:['Repérée']},
-  {id:'encours',label:'En cours',st:['À postuler','Envoyée','Relancée','Entretien']},
+  {id:'encours',label:'En cours',st:['À postuler','Envoyée','Relancée','En discussion','Entretien']},
   {id:'toutes',label:'Toutes',st:STATUTS.filter(s=>!HORS_TOUTES.includes(s))},
   {id:'cloturees',label:'Clôturées',st:['Clôturée']},
   {id:'corbeille',label:'Corbeille',st:['Corbeille']}
 ];
 const RELANCE_JOURS=10;
-const SENT=['Envoyée','Relancée','Entretien'];
+const SENT=['Envoyée','Relancée','En discussion','Entretien'];
 const PRIO={Haute:0,Moyenne:1,Basse:2};
 
 let db=null, rows=[], view='backlog', editing=null, readOnly=false, downloads=null, deleteArmed=false;
@@ -349,7 +349,7 @@ function renderTabs(){
   $('tabs').innerHTML=VIEWS.map(v=>`<button class="tab" role="tab" data-v="${v.id}" aria-selected="${!s&&v.id===view}">${v.label}<span class="n">${rows.filter(r=>v.st.includes(r.statut)).length}</span></button>`).join('');
 }
 
-function statusClass(s){return s==='Entretien'?'s-active':s==='Clôturée'?'s-bad':''}
+function statusClass(s){return s==='Entretien'||s==='En discussion'?'s-active':s==='Clôturée'?'s-bad':''}
 
 function renderList(){
   const all=filtered(), list=all;
