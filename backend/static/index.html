@@ -601,12 +601,23 @@ function makeApiDb(base){
       async set(body){await call(base+'/'+encodeURIComponent(id),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});await refresh()},
       async delete(){await call(base+'/'+encodeURIComponent(id),{method:'DELETE'});await refresh()}
     }},
+
     onSnapshot(next,error){
       const l={next};listeners.push(l);
-      refresh().catch(error);
-      // Rafraîchissement toutes les 5 s pour voir les modifications faites depuis un autre navigateur
-      const t=setInterval(()=>refresh().catch(error),5000);
-      return()=>clearInterval(t);
+      // Synchro légère : toutes les 30 s, onglet visible uniquement, recharge seulement si la base a changé
+      let last=null, busy=false;
+      async function check(force){
+        if(busy||(!force&&document.hidden)) return; busy=true;
+        try{
+          const {v}=await call(base+'/version');
+          if(force||v!==last){last=v;await refresh()}
+        }catch(e){error(e)}finally{busy=false}
+      }
+      check(true);
+      const t=setInterval(()=>check(false),30000);
+      const onVis=()=>{if(!document.hidden)check(false)};
+      document.addEventListener('visibilitychange',onVis);
+      return()=>{clearInterval(t);document.removeEventListener('visibilitychange',onVis)};
     }
   }}};
 }
