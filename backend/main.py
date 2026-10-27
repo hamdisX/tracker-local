@@ -334,7 +334,15 @@ def auto_trash(conn) -> None:
         (TRASH_AFTER_DAYS,),
     )
 
-
+@app.get("/api/candidatures/version")
+def candidatures_version():
+    """Empreinte légère : le navigateur ne recharge la liste que si elle change."""
+    with pool.connection() as conn:
+        n, last, maxref = conn.execute(
+            "SELECT count(*), max(updated_at), max(ref) FROM candidatures"
+        ).fetchone()
+    return {"v": f"{n}-{last.isoformat() if last else ''}-{maxref or 0}"}
+    
 @app.get("/api/candidatures")
 def list_candidatures():
     with pool.connection() as conn:
